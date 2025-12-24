@@ -249,12 +249,12 @@ jobs:
                         exit 1
                       fi
                     else
-                      # If rule isn't managed by terraform (no aws_lb_listener_rule.* in state), delete it to allow TG deletion
-                      if ! terraform state list | grep -q '^aws_lb_listener_rule\.' ; then
-                        echo "Rule $R appears unmanaged; deleting it to allow target group deletion."
+                      # If rule isn't managed by terraform (no aws_lb_listener_rule.* in state) and is not default, delete it to allow TG deletion
+                      if [ "$IS_DEFAULT" = "false" ] && ! terraform state list | grep -q '^aws_lb_listener_rule\.' ; then
+                        echo "Rule $R appears unmanaged and not default; deleting it to allow target group deletion."
                         aws elbv2 delete-rule --rule-arn "$R" --region "$AWS_REGION" || true
                       else
-                        echo "Rule $R may be managed by Terraform; ensure it is in state or config."
+                        echo "Rule $R may be managed by Terraform, is default, or ensure it is in state or config."
                       fi
                     fi
                   fi
@@ -372,12 +372,16 @@ jobs:
                       echo "Replacing default action with fixed-response for listener $LISTENER_ARN"
                       aws elbv2 modify-listener --listener-arn "$LISTENER_ARN" --default-actions '[{"Type":"fixed-response","FixedResponseConfig":{"MessageBody":"temporarily-unavailable","StatusCode":"200","ContentType":"text/plain"}}]' --region "$AWS_REGION" || true
                     else
-                      echo "Rule $R is not default. Attempting to delete if unmanaged."
-                      if ! terraform state list | grep -q '^aws_lb_listener_rule\.' ; then
-                        echo "Deleting unmanaged rule $R"
-                        aws elbv2 delete-rule --rule-arn "$R" --region "$AWS_REGION" || true
+                      if [ "$IS_DEFAULT" = "false" ]; then
+                        echo "Rule $R is not default. Attempting to delete if unmanaged."
+                        if ! terraform state list | grep -q '^aws_lb_listener_rule\.' ; then
+                          echo "Deleting unmanaged rule $R"
+                          aws elbv2 delete-rule --rule-arn "$R" --region "$AWS_REGION" || true
+                        else
+                          echo "Rule $R may be managed by Terraform; ensure it is in state or config."
+                        fi
                       else
-                        echo "Rule $R may be managed by Terraform; ensure it is in state or config."
+                        echo "Rule $R may be default or unknown; skipping deletion."
                       fi
                     fi
                   done
