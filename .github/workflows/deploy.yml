@@ -67,6 +67,7 @@ jobs:
   terraform-plan:
     needs: build
     runs-on: ubuntu-latest
+    environment: prod
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -106,6 +107,7 @@ jobs:
   terraform-apply:
     needs: [build, terraform-plan]
     runs-on: ubuntu-latest
+    environment: prod
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
@@ -152,6 +154,7 @@ jobs:
   update-ecs-service:
     needs: [build, terraform-apply]
     runs-on: ubuntu-latest
+    environment: prod
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Configure AWS credentials
@@ -186,6 +189,7 @@ jobs:
   notify:
     needs: [build, update-ecs-service]
     runs-on: ubuntu-latest
+    environment: prod
     if: always()
     steps:
       - name: Download ALB DNS
