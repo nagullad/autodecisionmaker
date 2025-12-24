@@ -167,6 +167,87 @@ jobs:
             echo "ECR repository does not exist; Terraform will create it during apply."
           fi
 
+      - name: Import other existing AWS resources if present
+        working-directory: ./terraform
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+          APP_NAME: ${{ env.APP_NAME }}
+        run: |
+          set -e
+
+          ALB_NAME="${APP_NAME}-alb"
+          TG_NAME="${APP_NAME}-tg"
+          LOG_GROUP="/ecs/${APP_NAME}"
+          ROLE_EXECUTION="${APP_NAME}-ecs-task-execution-role"
+          ROLE_TASK="${APP_NAME}-ecs-task-role"
+
+          echo "Checking for ALB: $ALB_NAME"
+          ALB_ARN=$(aws elbv2 describe-load-balancers --names "$ALB_NAME" --region "$AWS_REGION" --query 'LoadBalancers[0].LoadBalancerArn' --output text 2>/dev/null || true)
+          if [ -n "$ALB_ARN" ] && [ "$ALB_ARN" != "None" ]; then
+            echo "ALB exists: $ALB_ARN"
+            if ! terraform state list | grep -q '^aws_lb\.main$' ; then
+              echo "Importing ALB into terraform state..."
+              terraform import -input=false aws_lb.main "$ALB_ARN"
+            else
+              echo "ALB already in terraform state"
+            fi
+          else
+            echo "ALB not found"
+          fi
+
+          echo "Checking for Target Group: $TG_NAME"
+          TG_ARN=$(aws elbv2 describe-target-groups --names "$TG_NAME" --region "$AWS_REGION" --query 'TargetGroups[0].TargetGroupArn' --output text 2>/dev/null || true)
+          if [ -n "$TG_ARN" ] && [ "$TG_ARN" != "None" ]; then
+            echo "Target group exists: $TG_ARN"
+            if ! terraform state list | grep -q '^aws_lb_target_group\.main$' ; then
+              echo "Importing target group into terraform state..."
+              terraform import -input=false aws_lb_target_group.main "$TG_ARN"
+            else
+              echo "Target group already in terraform state"
+            fi
+          else
+            echo "Target group not found"
+          fi
+
+          echo "Checking for CloudWatch Log Group: $LOG_GROUP"
+          if aws logs describe-log-groups --log-group-name-prefix "$LOG_GROUP" --region "$AWS_REGION" --query 'logGroups[?logGroupName==`'"$LOG_GROUP"'`].logGroupName' --output text 2>/dev/null | grep -q "$LOG_GROUP" ; then
+            echo "Log group exists: $LOG_GROUP"
+            if ! terraform state list | grep -q '^aws_cloudwatch_log_group\.ecs$' ; then
+              echo "Importing CloudWatch log group into terraform state..."
+              terraform import -input=false aws_cloudwatch_log_group.ecs "$LOG_GROUP"
+            else
+              echo "Log group already in terraform state"
+            fi
+          else
+            echo "Log group not found"
+          fi
+
+          echo "Checking for IAM Role: $ROLE_EXECUTION"
+          if aws iam get-role --role-name "$ROLE_EXECUTION" --region "$AWS_REGION" >/dev/null 2>&1; then
+            echo "IAM role exists: $ROLE_EXECUTION"
+            if ! terraform state list | grep -q '^aws_iam_role\.ecs_task_execution_role$' ; then
+              echo "Importing IAM role execution into terraform state..."
+              terraform import -input=false aws_iam_role.ecs_task_execution_role "$ROLE_EXECUTION"
+            else
+              echo "IAM role execution already in terraform state"
+            fi
+          else
+            echo "IAM role execution not found"
+          fi
+
+          echo "Checking for IAM Role: $ROLE_TASK"
+          if aws iam get-role --role-name "$ROLE_TASK" --region "$AWS_REGION" >/dev/null 2>&1; then
+            echo "IAM role exists: $ROLE_TASK"
+            if ! terraform state list | grep -q '^aws_iam_role\.ecs_task_role$' ; then
+              echo "Importing IAM role task into terraform state..."
+              terraform import -input=false aws_iam_role.ecs_task_role "$ROLE_TASK"
+            else
+              echo "IAM role task already in terraform state"
+            fi
+          else
+            echo "IAM role task not found"
+          fi
+
       - name: Recreate plan (after imports)
         working-directory: ./terraform
         run: |
