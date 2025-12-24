@@ -355,8 +355,31 @@ jobs:
                 echo "Blocking rules detected:$BLOCKING_RULES"
                 if [ "${{ github.event.inputs['allow-listener-mutate'] }}" = 'true' ] || [ "$ALLOW_LISTENER_MUTATE" = "true" ]; then
                   for R in $BLOCKING_RULES; do
-                    echo "Deleting unmanaged rule $R"
-                    aws elbv2 delete-rule --rule-arn "$R" --region "$AWS_REGION" || true
+                    echo "Processing blocking rule $R"
+                    IS_DEFAULT=$(aws elbv2 describe-rules --rule-arns "$R" --region "$AWS_REGION" --query 'Rules[0].IsDefault' --output text 2>/dev/null || true)
+                    LISTENER_ARN=$(aws elbv2 describe-rules --rule-arns "$R" --region "$AWS_REGION" --query 'Rules[0].ListenerArn' --output text 2>/dev/null || true)
+                    if [ "$IS_DEFAULT" = "true" ]; then
+                      echo "Rule $R is a default rule for listener $LISTENER_ARN."
+                      SANITIZED_ARN=$(echo "$LISTENER_ARN" | sed 's|[:/]|_|g')
+                      mkdir -p ./terraform/listeners
+                      if [ ! -f "./terraform/listeners/${SANITIZED_ARN}.json" ]; then
+                        echo "Saving original default actions for $LISTENER_ARN to ./terraform/listeners/${SANITIZED_ARN}.json"
+                        aws elbv2 describe-listeners --listener-arns "$LISTENER_ARN" --region "$AWS_REGION" --query 'Listeners[0].DefaultActions' --output json > ./terraform/listeners/${SANITIZED_ARN}.json || true
+                        echo "$LISTENER_ARN" >> ./terraform/listeners/modified.txt
+                      else
+                        echo "Original actions already saved for $LISTENER_ARN"
+                      fi
+                      echo "Replacing default action with fixed-response for listener $LISTENER_ARN"
+                      aws elbv2 modify-listener --listener-arn "$LISTENER_ARN" --default-actions '[{"Type":"fixed-response","FixedResponseConfig":{"MessageBody":"temporarily-unavailable","StatusCode":"200","ContentType":"text/plain"}}]' --region "$AWS_REGION" || true
+                    else
+                      echo "Rule $R is not default. Attempting to delete if unmanaged."
+                      if ! terraform state list | grep -q '^aws_lb_listener_rule\.' ; then
+                        echo "Deleting unmanaged rule $R"
+                        aws elbv2 delete-rule --rule-arn "$R" --region "$AWS_REGION" || true
+                      else
+                        echo "Rule $R may be managed by Terraform; ensure it is in state or config."
+                      fi
+                    fi
                   done
                 else
                   echo "Blocking rules present and mutation not allowed. Aborting to avoid unsafe changes. Re-run with allow-listener-mutate=true or import the blocking rules into Terraform."
