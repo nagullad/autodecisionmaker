@@ -1,0 +1,18 @@
+# terraform.tfvars.example
+# Copy this file to terraform.tfvars and fill in your values
+
+aws_region     = "us-east-1"
+app_name       = "autodecisionmaker"
+environment    = "dev"
+container_port = 8080
+container_cpu  = "256"
+container_memory = "512"
+desired_count  = 1
+
+# Auto Scaling
+enable_autoscaling = true
+min_capacity       = 1
+max_capacity       = 3
+
+# Container image (will be set by GitHub Actions during deployment)
+# container_image = "123456789.dkr.ecr.us-east-1.amazonaws.com/autodecisionmaker:latest"
