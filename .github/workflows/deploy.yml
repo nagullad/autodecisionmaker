@@ -315,6 +315,72 @@ jobs:
           echo "Recreating terraform plan after import to avoid stale plan..."
           terraform plan -out=tfplan -input=false
 
+      - name: Wait for target group to be free
+        working-directory: ./terraform
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+          APP_NAME: ${{ env.APP_NAME }}
+        run: |
+          set -e
+          TG_NAME="${APP_NAME}-tg"
+          echo "Checking target group: $TG_NAME"
+          TG_ARN=$(aws elbv2 describe-target-groups --names "$TG_NAME" --region "$AWS_REGION" --query 'TargetGroups[0].TargetGroupArn' --output text 2>/dev/null || true)
+          if [ -z "$TG_ARN" ] || [ "$TG_ARN" = "None" ]; then
+            echo "No target group found; nothing to wait for"
+          else
+            echo "Found target group ARN: $TG_ARN"
+            max=24
+            i=0
+            while [ $i -lt $max ]; do
+              # find any rules referencing TG
+              BLOCKING_RULES=""
+              LISTENERS=$(aws elbv2 describe-listeners --load-balancer-arn $(aws elbv2 describe-load-balancers --names "${APP_NAME}-alb" --region "$AWS_REGION" --query 'LoadBalancers[0].LoadBalancerArn' --output text 2>/dev/null || echo "") --region "$AWS_REGION" --query 'Listeners[].ListenerArn' --output text 2>/dev/null || true)
+              for L in $LISTENERS; do
+                RULES=$(aws elbv2 describe-rules --listener-arn "$L" --region "$AWS_REGION" --query 'Rules[].RuleArn' --output text 2>/dev/null || true)
+                for R in $RULES; do
+                  if aws elbv2 describe-rules --rule-arns "$R" --region "$AWS_REGION" --query 'Rules[0].Actions[?TargetGroupArn!=`null`].TargetGroupArn' --output text 2>/dev/null | grep -q "$TG_ARN" ; then
+                    BLOCKING_RULES="$BLOCKING_RULES $R"
+                  fi
+                done
+              done
+
+              TARGETS=$(aws elbv2 describe-target-health --target-group-arn "$TG_ARN" --region "$AWS_REGION" --query 'TargetHealthDescriptions[].Target.Id' --output text 2>/dev/null || true)
+
+              if [ -z "$BLOCKING_RULES" ] && [ -z "$TARGETS" ]; then
+                echo "Target group is free."
+                break
+              fi
+
+              if [ -n "$BLOCKING_RULES" ]; then
+                echo "Blocking rules detected:$BLOCKING_RULES"
+                if [ "${{ github.event.inputs['allow-listener-mutate'] }}" = 'true' ] || [ "$ALLOW_LISTENER_MUTATE" = "true" ]; then
+                  for R in $BLOCKING_RULES; do
+                    echo "Deleting unmanaged rule $R"
+                    aws elbv2 delete-rule --rule-arn "$R" --region "$AWS_REGION" || true
+                  done
+                else
+                  echo "Blocking rules present and mutation not allowed. Aborting to avoid unsafe changes. Re-run with allow-listener-mutate=true or import the blocking rules into Terraform."
+                  exit 1
+                fi
+              fi
+
+              if [ -n "$TARGETS" ]; then
+                echo "Deregistering targets: $TARGETS"
+                for ID in $TARGETS; do
+                  aws elbv2 deregister-targets --target-group-arn "$TG_ARN" --targets Id=$ID --region "$AWS_REGION" || true
+                done
+              fi
+
+              sleep 5
+              i=$((i+1))
+            done
+
+            if [ $i -ge $max ]; then
+              echo "Timed out waiting for target group to be free."
+              exit 1
+            fi
+          fi
+
       - name: Terraform Apply
         working-directory: ./terraform
         run: terraform apply -input=false tfplan
