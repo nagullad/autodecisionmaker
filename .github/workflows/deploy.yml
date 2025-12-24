@@ -223,9 +223,22 @@ jobs:
                 echo "Checking rules on listener $LISTENER_ARN for references to $TG_ARN"
                 RULES=$(aws elbv2 describe-rules --listener-arn "$LISTENER_ARN" --region "$AWS_REGION" --query 'Rules[].RuleArn' --output text 2>/dev/null || true)
                 for R in $RULES; do
-                  if aws elbv2 describe-rules --rule-arns "$R" --region "$AWS_REGION" --query 'Rules[].Actions[].TargetGroupArn' --output text 2>/dev/null | grep -q "$TG_ARN" ; then
+                  TARGET_ARNS=$(aws elbv2 describe-rules --rule-arns "$R" --region "$AWS_REGION" --query 'Rules[0].Actions[?TargetGroupArn!=null].TargetGroupArn' --output text 2>/dev/null || true)
+                  if echo "$TARGET_ARNS" | grep -q "$TG_ARN" ; then
                     echo "Rule $R references target group $TG_ARN."
-                    echo "If this rule is not managed by Terraform, please import or remove it so the target group can be updated or deleted."
+                    IS_DEFAULT=$(aws elbv2 describe-rules --rule-arns "$R" --region "$AWS_REGION" --query 'Rules[0].IsDefault' --output text 2>/dev/null || true)
+                    if [ "$IS_DEFAULT" = "true" ]; then
+                      echo "Rule $R is the default rule for its listener; cannot delete automatically. Please import it into Terraform or remove it manually."
+                      exit 1
+                    else
+                      # If rule isn't managed by terraform (no aws_lb_listener_rule.* in state), delete it to allow TG deletion
+                      if ! terraform state list | grep -q '^aws_lb_listener_rule\.' ; then
+                        echo "Rule $R appears unmanaged; deleting it to allow target group deletion."
+                        aws elbv2 delete-rule --rule-arn "$R" --region "$AWS_REGION" || true
+                      else
+                        echo "Rule $R may be managed by Terraform; ensure it is in state or config."
+                      fi
+                    fi
                   fi
                 done
 
