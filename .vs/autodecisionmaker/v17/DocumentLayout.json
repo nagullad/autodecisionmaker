@@ -1,0 +1,111 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\DurgaCoding\\Github\\Repos\\webapp\\autodecisionmaker\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{9F1A5F6D-E637-425D-90C2-6DD941BD7521}|autodecisionmaker.csproj|d:\\durgacoding\\github\\repos\\webapp\\autodecisionmaker\\dockerfile||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{9F1A5F6D-E637-425D-90C2-6DD941BD7521}|autodecisionmaker.csproj|solutionrelative:dockerfile||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9F1A5F6D-E637-425D-90C2-6DD941BD7521}|autodecisionmaker.csproj|d:\\durgacoding\\github\\repos\\webapp\\autodecisionmaker\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9F1A5F6D-E637-425D-90C2-6DD941BD7521}|autodecisionmaker.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9F1A5F6D-E637-425D-90C2-6DD941BD7521}|autodecisionmaker.csproj|d:\\durgacoding\\github\\repos\\webapp\\autodecisionmaker\\.gitignore||{3B902123-F8A7-4915-9F01-361F908088D0}|",
+      "RelativeMoniker": "D:0:0:{9F1A5F6D-E637-425D-90C2-6DD941BD7521}|autodecisionmaker.csproj|solutionrelative:.gitignore||{3B902123-F8A7-4915-9F01-361F908088D0}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9F1A5F6D-E637-425D-90C2-6DD941BD7521}|autodecisionmaker.csproj|d:\\durgacoding\\github\\repos\\webapp\\autodecisionmaker\\build.ps1||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{9F1A5F6D-E637-425D-90C2-6DD941BD7521}|autodecisionmaker.csproj|solutionrelative:build.ps1||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9F1A5F6D-E637-425D-90C2-6DD941BD7521}|autodecisionmaker.csproj|d:\\durgacoding\\github\\repos\\webapp\\autodecisionmaker\\autodecisionmaker.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{9F1A5F6D-E637-425D-90C2-6DD941BD7521}|autodecisionmaker.csproj|solutionrelative:autodecisionmaker.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Dockerfile",
+              "DocumentMoniker": "D:\\DurgaCoding\\Github\\Repos\\webapp\\autodecisionmaker\\Dockerfile",
+              "RelativeDocumentMoniker": "Dockerfile",
+              "ToolTip": "D:\\DurgaCoding\\Github\\Repos\\webapp\\autodecisionmaker\\Dockerfile",
+              "RelativeToolTip": "Dockerfile",
+              "ViewState": "AgIAAAwAAAAAAAAAAAAAAAkAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2025-12-23T23:41:31.939Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": ".gitignore",
+              "DocumentMoniker": "D:\\DurgaCoding\\Github\\Repos\\webapp\\autodecisionmaker\\.gitignore",
+              "RelativeDocumentMoniker": ".gitignore",
+              "ToolTip": "D:\\DurgaCoding\\Github\\Repos\\webapp\\autodecisionmaker\\.gitignore",
+              "RelativeToolTip": ".gitignore",
+              "ViewState": "AgIAAHMAAAAAAAAAAAAwwCQAAAAKAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2025-12-22T19:08:42.725Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "build.ps1",
+              "DocumentMoniker": "D:\\DurgaCoding\\Github\\Repos\\webapp\\autodecisionmaker\\build.ps1",
+              "RelativeDocumentMoniker": "build.ps1",
+              "ToolTip": "D:\\DurgaCoding\\Github\\Repos\\webapp\\autodecisionmaker\\build.ps1",
+              "RelativeToolTip": "build.ps1",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2025-12-22T11:43:08.48Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Program.cs",
+              "DocumentMoniker": "D:\\DurgaCoding\\Github\\Repos\\webapp\\autodecisionmaker\\Program.cs",
+              "RelativeDocumentMoniker": "Program.cs",
+              "ToolTip": "D:\\DurgaCoding\\Github\\Repos\\webapp\\autodecisionmaker\\Program.cs",
+              "RelativeToolTip": "Program.cs",
+              "ViewState": "AgIAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-22T11:42:07.073Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "autodecisionmaker.csproj",
+              "DocumentMoniker": "D:\\DurgaCoding\\Github\\Repos\\webapp\\autodecisionmaker\\autodecisionmaker.csproj",
+              "RelativeDocumentMoniker": "autodecisionmaker.csproj",
+              "ToolTip": "D:\\DurgaCoding\\Github\\Repos\\webapp\\autodecisionmaker\\autodecisionmaker.csproj",
+              "RelativeToolTip": "autodecisionmaker.csproj",
+              "ViewState": "AgIAAB4AAAAAAAAAAABBwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2025-12-22T11:41:57.35Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+﻿# Build script for ASP.NET BFF with React client
+# This script builds both the .NET backend and React frontend
+
+Write-Host "Building ASP.NET BFF project with React client..." -ForegroundColor Green
+
+# Build the .NET project
+Write-Host "Building .NET project..." -ForegroundColor Cyan
+dotnet build
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Build failed!" -ForegroundColor Red
+    exit 1
+}
+
+Write-Host "Build completed successfully!" -ForegroundColor Green

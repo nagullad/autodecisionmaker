@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>fd46b308-3fa2-4f80-9ecd-bb3be228cf08</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <DockerfileContext>.</DockerfileContext>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <!-- Target to build React app and copy to wwwroot. Guarded and tolerant so .NET build doesn't fail when Node/npm is not available. -->
+  <Target Name="BuildClientApp" BeforeTargets="Build" Condition="Exists('clientapp/package.json')">
+    <!-- Install and build the client if Node is available. Continue on error so this target won't fail the overall build. -->
+    <Exec Command="npm install" WorkingDirectory="clientapp" ContinueOnError="true" />
+    <Exec Command="npm run build" WorkingDirectory="clientapp" ContinueOnError="true" />
+  </Target>
+
+  <Target Name="CopyClientApp" BeforeTargets="Build" DependsOnTargets="BuildClientApp" Condition="Exists('clientapp/dist')">
+    <ItemGroup>
+      <ClientAppFiles Include="clientapp/dist/**" />
+    </ItemGroup>
+    <Copy SourceFiles="@(ClientAppFiles)" DestinationFolder="wwwroot/%(RecursiveDir)" SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>

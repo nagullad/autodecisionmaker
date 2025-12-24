@@ -1,0 +1,145 @@
+﻿## ASP.NET Core & .NET
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio cache/options
+.vs/
+.vscode/
+*.sln.docstates
+
+# Visual Studio user-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.user
+*.userprefs
+
+# Visual Studio Build Tools
+*.exe
+*.exe.config
+
+# ReSharper
+.idea/
+*.DotSettings
+
+# User-specific files
+appsettings.Development.json
+*.local
+.env
+.env.local
+.env.*.local
+
+# Test Results
+TestResults/
+*.trx
+*.coverage
+
+# NuGet
+*.nupkg
+*.snupkg
+*.nuget.props
+*.nuget.targets
+.nuget/
+
+# .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+## React / Node.js / npm
+
+# Dependencies
+clientapp/node_modules/
+clientapp/yarn-error.log*
+clientapp/package-lock.json
+clientapp/yarn.lock
+
+# Production build
+clientapp/dist/
+clientapp/dist-ssr/
+clientapp/*.local
+
+# Vite
+clientapp/.env.local
+clientapp/.env.*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+## Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+## Miscellaneous
+
+# OS specific
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# IDE specific
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.sublime-project
+.sublime-workspace
+
+# Build outputs
+wwwroot/
+!wwwroot/.gitkeep
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+*.bak
+
+# Docker
+.docker/
+docker-compose.override.yml
+
+# User secrets
+secrets/
+user-secrets.json
+
+# Azure Functions
+local.settings.json
+
+# Visual Studio Code
+.vscode-test
+.history/
+
+# Rider
+.idea/
+.idea_modules/
+*.iml
+out/
+
+# Generated files
+[Gg]enerated/

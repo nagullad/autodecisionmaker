@@ -1,0 +1,6 @@
+@autodecisionmaker_HostAddress = http://localhost:5011
+
+GET {{autodecisionmaker_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
