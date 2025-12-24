@@ -144,6 +144,26 @@ jobs:
         working-directory: ./terraform
         run: terraform init
 
+      - name: Import existing ECR repository if present
+        working-directory: ./terraform
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+        run: |
+          set -e
+          REPO_NAME=${{ env.APP_NAME }}
+          echo "Checking for existing ECR repository: $REPO_NAME"
+          if aws ecr describe-repositories --repository-names "$REPO_NAME" --region "$AWS_REGION" >/dev/null 2>&1; then
+            echo "ECR repository '$REPO_NAME' exists."
+            if ! terraform state list | grep -q '^aws_ecr_repository\.app$' ; then
+              echo "Importing existing ECR repository into Terraform state..."
+              terraform import aws_ecr_repository.app "$REPO_NAME"
+            else
+              echo "ECR repository already present in Terraform state."
+            fi
+          else
+            echo "ECR repository does not exist; Terraform will create it during apply."
+          fi
+
       - name: Terraform Apply
         working-directory: ./terraform
         run: terraform apply tfplan
