@@ -1,13 +1,9 @@
 # This workflow will build a .NET project
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
 
-name: .NET
+name: Build and Test .NET Application
 
 on:
-  push:
-    branches: ['**']
-  pull_request:
-    branches: ['**']
   workflow_dispatch:
     inputs:
       push-docker:
@@ -33,21 +29,21 @@ jobs:
     - name: Test
       run: dotnet test --no-build --verbosity normal
 
-    # Only set image name and log in / push to Docker Hub on an actual push to the master branch.
-    # PRs (especially from forks) will skip these steps so they won't fail due to missing secrets.
+    # Only set image name and log in / push to Docker Hub when manually dispatched with push-docker=true and branch master.
+    # PRs and automatic pushes are disabled; manual dispatch must be used to push images.
     - name: Set image name
-      if: (github.event_name == 'push' && github.ref == 'refs/heads/master') || (github.event_name == 'workflow_dispatch' && github.event.inputs['push-docker'] == 'true' && github.ref == 'refs/heads/master')
+      if: github.event_name == 'workflow_dispatch' && github.event.inputs['push-docker'] == 'true' && github.ref == 'refs/heads/master'
       run: echo "IMAGE_NAME=${{ secrets.DOCKER_HUB_USERNAME }}/autodecisionmaker" >> $GITHUB_ENV
 
     - name: Log in to Docker Hub
-      if: (github.event_name == 'push' && github.ref == 'refs/heads/master') || (github.event_name == 'workflow_dispatch' && github.event.inputs['push-docker'] == 'true' && github.ref == 'refs/heads/master')
+      if: github.event_name == 'workflow_dispatch' && github.event.inputs['push-docker'] == 'true' && github.ref == 'refs/heads/master'
       uses: docker/login-action@v2
       with:
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
         password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }} 
 
     - name: Build and push Docker image (sha)
-      if: (github.event_name == 'push' && github.ref == 'refs/heads/master') || (github.event_name == 'workflow_dispatch' && github.event.inputs['push-docker'] == 'true' && github.ref == 'refs/heads/master')
+      if: github.event_name == 'workflow_dispatch' && github.event.inputs['push-docker'] == 'true' && github.ref == 'refs/heads/master'
       uses: docker/build-push-action@v4
       with:
         context: .
@@ -57,7 +53,7 @@ jobs:
         platforms: linux/amd64
 
     - name: Tag and push latest (only on master)
-      if: (github.event_name == 'push' && github.ref == 'refs/heads/master') || (github.event_name == 'workflow_dispatch' && github.event.inputs['push-docker'] == 'true' && github.ref == 'refs/heads/master')
+      if: github.event_name == 'workflow_dispatch' && github.event.inputs['push-docker'] == 'true' && github.ref == 'refs/heads/master'
       run: |
         docker tag docker.io/${{ env.IMAGE_NAME }}:${{ github.sha }} docker.io/${{ env.IMAGE_NAME }}:latest
         docker push docker.io/${{ env.IMAGE_NAME }}:latest
