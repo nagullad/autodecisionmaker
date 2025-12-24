@@ -117,6 +117,8 @@ jobs:
     needs: [build, terraform-plan]
     runs-on: ubuntu-latest
     environment: prod
+    env:
+      TF_VAR_container_image: ${{ needs.build.outputs.image }}
     if: github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout code
@@ -156,7 +158,8 @@ jobs:
             echo "ECR repository '$REPO_NAME' exists."
             if ! terraform state list | grep -q '^aws_ecr_repository\.app$' ; then
               echo "Importing existing ECR repository into Terraform state..."
-              terraform import aws_ecr_repository.app "$REPO_NAME"
+              # Ensure non-interactive import by providing required variables via env and disabling input
+              terraform import -input=false aws_ecr_repository.app "$REPO_NAME"
             else
               echo "ECR repository already present in Terraform state."
             fi
