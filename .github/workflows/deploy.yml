@@ -117,7 +117,7 @@ jobs:
     needs: [build, terraform-plan]
     runs-on: ubuntu-latest
     environment: prod
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -164,7 +164,7 @@ jobs:
     needs: [build, terraform-apply]
     runs-on: ubuntu-latest
     environment: prod
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch'
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
