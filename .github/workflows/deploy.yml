@@ -167,9 +167,16 @@ jobs:
             echo "ECR repository does not exist; Terraform will create it during apply."
           fi
 
+      - name: Recreate plan (after imports)
+        working-directory: ./terraform
+        run: |
+          set -e
+          echo "Recreating terraform plan after import to avoid stale plan..."
+          terraform plan -out=tfplan -input=false
+
       - name: Terraform Apply
         working-directory: ./terraform
-        run: terraform apply tfplan
+        run: terraform apply -input=false tfplan
 
       - name: Get ALB DNS
         working-directory: ./terraform
