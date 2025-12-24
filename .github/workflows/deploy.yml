@@ -53,7 +53,7 @@ jobs:
           docker push $REGISTRY/$REPOSITORY:latest
 
       - name: Upload image name as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: image-uri
           path: ./image_uri.txt
@@ -92,7 +92,7 @@ jobs:
         run: terraform plan -out=tfplan
 
       - name: Upload Terraform Plan
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: tfplan
           path: ./terraform/tfplan
@@ -138,7 +138,7 @@ jobs:
           cat ../alb_dns.txt
 
       - name: Upload ALB DNS
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: alb-dns
           path: ./alb_dns.txt
