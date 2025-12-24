@@ -116,7 +116,7 @@ jobs:
           terraform_version: 1.6.0
 
       - name: Download Terraform Plan
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: tfplan
           path: ./terraform/
@@ -182,7 +182,7 @@ jobs:
     steps:
       - name: Download ALB DNS
         if: needs.build.result == 'success'
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: alb-dns
 
