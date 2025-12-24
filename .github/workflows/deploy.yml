@@ -30,6 +30,14 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Ensure ECR repository exists
+        run: |
+          REPO_NAME=${{ env.APP_NAME }}
+          echo "Checking if ECR repository exists: $REPO_NAME"
+          aws ecr describe-repositories --repository-names "$REPO_NAME" --region ${{ env.AWS_REGION }} || aws ecr create-repository --repository-name "$REPO_NAME" --region ${{ env.AWS_REGION }}
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+
       - name: Build Docker image
         id: image
         env:
