@@ -62,3 +62,29 @@ variable "max_capacity" {
   type        = number
   default     = 3
 }
+
+# Paths to PEM encoded certificate files generated with OpenSSL. If certificate_body_path is set (non-empty),
+# Terraform will import the certificate into ACM and create an HTTPS listener on the ALB.
+variable "certificate_body_path" {
+  description = "Local path to certificate PEM file (public cert). Leave empty to skip importing a certificate."
+  type        = string
+  default     = ""
+}
+
+variable "private_key_path" {
+  description = "Local path to private key PEM file corresponding to the certificate. Required when certificate_body_path is provided."
+  type        = string
+  default     = ""
+}
+
+variable "certificate_chain_path" {
+  description = "Local path to certificate chain PEM file (optional)."
+  type        = string
+  default     = ""
+}
+
+variable "domain_name" {
+  description = "Domain name for the certificate (e.g. example.com). If empty, app_name will be used — replace with your actual domain when importing a valid cert."
+  type        = string
+  default     = ""
+}

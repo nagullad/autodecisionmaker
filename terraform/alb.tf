@@ -92,11 +92,32 @@ resource "aws_lb_target_group" "main" {
   }
 }
 
-# ALB Listener
-resource "aws_lb_listener" "main" {
+# Optionally import a certificate into ACM if local PEM paths are provided
+resource "aws_acm_certificate" "imported" {
+  count = length(trimspace(var.certificate_body_path)) > 0 ? 1 : 0
+
+  private_key = file(var.private_key_path)
+  certificate_body = file(var.certificate_body_path)
+
+  certificate_chain = length(trimspace(var.certificate_chain_path)) > 0 ? file(var.certificate_chain_path) : null
+
+  domain_name = length(trimspace(var.domain_name)) > 0 ? var.domain_name : var.app_name
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# ALB HTTPS Listener (uses imported ACM cert when present)
+resource "aws_lb_listener" "https" {
+  count            = length(aws_acm_certificate.imported) > 0 ? 1 : 0
   load_balancer_arn = aws_lb.main.arn
-  port              = 80
-  protocol          = "HTTP"
+  port              = 443
+  protocol          = "HTTPS"
+
+  ssl_policy = "ELBSecurityPolicy-2016-08"
+
+  certificate_arn = aws_acm_certificate.imported[0].arn
 
   default_action {
     type             = "forward"
@@ -104,7 +125,29 @@ resource "aws_lb_listener" "main" {
   }
 }
 
+# ALB HTTP listener that redirects to HTTPS
+resource "aws_lb_listener" "http" {
+  load_balancer_arn = aws_lb.main.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type = "redirect"
+
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+  }
+}
+
 output "alb_dns_name" {
   description = "DNS name of the load balancer"
   value       = aws_lb.main.dns_name
+}
+
+output "imported_certificate_arn" {
+  description = "ARN of the imported ACM certificate (if created)"
+  value = length(aws_acm_certificate.imported) > 0 ? aws_acm_certificate.imported[0].arn : ""
 }
