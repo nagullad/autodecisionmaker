@@ -7,9 +7,9 @@ resource "aws_ecr_repository" "app" {
     scan_on_push = true
   }
 
-  tags = {
+  tags = merge(local.default_tags, {
     Name = "${var.app_name}-ecr"
-  }
+  })
 }
 
 # ECR Lifecycle Policy (keep last 5 images)

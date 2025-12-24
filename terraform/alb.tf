@@ -65,9 +65,9 @@ resource "aws_lb" "main" {
 
   enable_deletion_protection = false
 
-  tags = {
+  tags = merge(local.default_tags, {
     Name = "${var.app_name}-alb"
-  }
+  })
 }
 
 # Target Group
