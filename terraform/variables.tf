@@ -13,7 +13,7 @@ variable "app_name" {
 variable "environment" {
   description = "Environment name"
   type        = string
-  default     = "dev"
+  default     = "prod"
 }
 
 variable "container_port" {
