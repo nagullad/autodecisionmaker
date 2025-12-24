@@ -205,6 +205,35 @@ jobs:
             else
               echo "Target group already in terraform state"
             fi
+
+            # Import listeners for the ALB so Terraform knows about dependencies
+            echo "Checking for listeners on ALB: $ALB_ARN"
+            LISTENER_ARNS=$(aws elbv2 describe-listeners --load-balancer-arn "$ALB_ARN" --region "$AWS_REGION" --query 'Listeners[].ListenerArn' --output text 2>/dev/null || true)
+            if [ -n "$LISTENER_ARNS" ] && [ "$LISTENER_ARNS" != "None" ]; then
+              for LISTENER_ARN in $LISTENER_ARNS; do
+                echo "Found listener: $LISTENER_ARN"
+                if ! terraform state list | grep -q '^aws_lb_listener\.main$' ; then
+                  echo "Importing listener into terraform state..."
+                  terraform import -input=false aws_lb_listener.main "$LISTENER_ARN"
+                else
+                  echo "Listener already in terraform state"
+                fi
+
+                # Check for rules referencing the target group and warn if present
+                echo "Checking rules on listener $LISTENER_ARN for references to $TG_ARN"
+                RULES=$(aws elbv2 describe-rules --listener-arn "$LISTENER_ARN" --region "$AWS_REGION" --query 'Rules[].RuleArn' --output text 2>/dev/null || true)
+                for R in $RULES; do
+                  if aws elbv2 describe-rules --rule-arns "$R" --region "$AWS_REGION" --query 'Rules[].Actions[].TargetGroupArn' --output text 2>/dev/null | grep -q "$TG_ARN" ; then
+                    echo "Rule $R references target group $TG_ARN."
+                    echo "If this rule is not managed by Terraform, please import or remove it so the target group can be updated or deleted."
+                  fi
+                done
+
+              done
+            else
+              echo "No listeners found"
+            fi
+
           else
             echo "Target group not found"
           fi
