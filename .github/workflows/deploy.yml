@@ -1,0 +1,200 @@
+name: Build and Deploy to ECS
+
+on:
+  push:
+    branches:
+      - main
+      - awsinfra
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  APP_NAME: autodecisionmaker
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.image.outputs.image }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build Docker image
+        id: image
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPOSITORY: ${{ env.APP_NAME }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
+          docker tag $REGISTRY/$REPOSITORY:$IMAGE_TAG $REGISTRY/$REPOSITORY:latest
+          echo "image=$REGISTRY/$REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Push image to ECR
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPOSITORY: ${{ env.APP_NAME }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+          docker push $REGISTRY/$REPOSITORY:latest
+
+      - name: Upload image name as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: image-uri
+          path: ./image_uri.txt
+
+  terraform-plan:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.6.0
+
+      - name: Terraform Format Check
+        working-directory: ./terraform
+        run: terraform fmt -check
+
+      - name: Terraform Init
+        working-directory: ./terraform
+        run: terraform init
+
+      - name: Terraform Plan
+        working-directory: ./terraform
+        env:
+          TF_VAR_container_image: ${{ needs.build.outputs.image }}
+        run: terraform plan -out=tfplan
+
+      - name: Upload Terraform Plan
+        uses: actions/upload-artifact@v3
+        with:
+          name: tfplan
+          path: ./terraform/tfplan
+
+  terraform-apply:
+    needs: [build, terraform-plan]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.6.0
+
+      - name: Download Terraform Plan
+        uses: actions/download-artifact@v3
+        with:
+          name: tfplan
+          path: ./terraform/
+
+      - name: Terraform Init
+        working-directory: ./terraform
+        run: terraform init
+
+      - name: Terraform Apply
+        working-directory: ./terraform
+        run: terraform apply tfplan
+
+      - name: Get ALB DNS
+        working-directory: ./terraform
+        run: |
+          terraform output -raw alb_dns_name > ../alb_dns.txt
+          cat ../alb_dns.txt
+
+      - name: Upload ALB DNS
+        uses: actions/upload-artifact@v3
+        with:
+          name: alb-dns
+          path: ./alb_dns.txt
+
+  update-ecs-service:
+    needs: [build, terraform-apply]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Update ECS Service
+        run: |
+          aws ecs update-service \
+            --cluster ${{ env.APP_NAME }}-cluster \
+            --service ${{ env.APP_NAME }}-service \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Wait for service deployment
+        run: |
+          aws ecs wait services-stable \
+            --cluster ${{ env.APP_NAME }}-cluster \
+            --services ${{ env.APP_NAME }}-service \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Verify Deployment
+        run: |
+          aws ecs describe-services \
+            --cluster ${{ env.APP_NAME }}-cluster \
+            --services ${{ env.APP_NAME }}-service \
+            --region ${{ env.AWS_REGION }}
+
+  notify:
+    needs: [build, update-ecs-service]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Download ALB DNS
+        if: needs.build.result == 'success'
+        uses: actions/download-artifact@v3
+        with:
+          name: alb-dns
+
+      - name: Deployment Summary
+        run: |
+          echo "?? Deployment Summary"
+          echo "====================="
+          echo "Application: ${{ env.APP_NAME }}"
+          echo "Image: ${{ needs.build.outputs.image }}"
+          echo "Region: ${{ env.AWS_REGION }}"
+          if [ -f alb_dns.txt ]; then
+            echo "Access URL: http://$(cat alb_dns.txt)"
+          fi
