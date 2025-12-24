@@ -86,7 +86,16 @@ jobs:
 
       - name: Terraform Format Check
         working-directory: ./terraform
-        run: terraform fmt -check
+        run: |
+          set -e
+          if terraform fmt -check ; then
+            echo "Terraform files are formatted."
+          else
+            echo "Terraform formatting issues detected. Showing diff..."
+            terraform fmt -diff
+            echo "\nPlease run 'terraform fmt' locally in the ./terraform directory and commit the changes to fix formatting."
+            exit 1
+          fi
 
       - name: Terraform Init
         working-directory: ./terraform
