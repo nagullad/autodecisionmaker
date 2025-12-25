@@ -65,9 +65,11 @@ resource "aws_lb" "main" {
 
   enable_deletion_protection = false
 
-  # Force new ALB if there are conflicts with existing state
+  # If ALB already exists or security groups are managed outside Terraform,
+  # ignore changes to security_groups to avoid SetSecurityGroups API errors.
   lifecycle {
     create_before_destroy = false
+    ignore_changes = [security_groups]
   }
 
   tags = merge(local.default_tags, {
