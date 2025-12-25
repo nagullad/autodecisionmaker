@@ -92,6 +92,11 @@ resource "aws_lb_target_group" "main" {
   }
 }
 
+# Effective domain name: use provided var.domain_name when set, otherwise fall back to the ALB DNS name
+locals {
+  effective_domain_name = length(trimspace(var.domain_name)) > 0 ? var.domain_name : aws_lb.main.dns_name
+}
+
 # Optionally import a certificate into ACM if local PEM paths are provided
 resource "aws_acm_certificate" "imported" {
   count = length(trimspace(var.certificate_body_path)) > 0 ? 1 : 0
@@ -101,7 +106,8 @@ resource "aws_acm_certificate" "imported" {
 
   certificate_chain = length(trimspace(var.certificate_chain_path)) > 0 ? file(var.certificate_chain_path) : null
 
-  domain_name = length(trimspace(var.domain_name)) > 0 ? var.domain_name : var.app_name
+  # Use the effective domain name
+  domain_name = local.effective_domain_name
 
   lifecycle {
     create_before_destroy = true
@@ -150,4 +156,9 @@ output "alb_dns_name" {
 output "imported_certificate_arn" {
   description = "ARN of the imported ACM certificate (if created)"
   value = length(aws_acm_certificate.imported) > 0 ? aws_acm_certificate.imported[0].arn : ""
+}
+
+output "effective_domain_name" {
+  description = "Domain name used for the certificate (either var.domain_name or ALB DNS)"
+  value       = local.effective_domain_name
 }
