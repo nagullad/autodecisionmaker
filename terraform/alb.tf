@@ -101,7 +101,7 @@ locals {
 resource "aws_acm_certificate" "imported" {
   count = length(trimspace(var.certificate_body_path)) > 0 ? 1 : 0
 
-  private_key = file(var.private_key_path)
+  private_key      = file(var.private_key_path)
   certificate_body = file(var.certificate_body_path)
 
   certificate_chain = length(trimspace(var.certificate_chain_path)) > 0 ? file(var.certificate_chain_path) : null
@@ -116,7 +116,7 @@ resource "aws_acm_certificate" "imported" {
 
 # ALB HTTPS Listener (uses imported ACM cert when present)
 resource "aws_lb_listener" "https" {
-  count            = length(aws_acm_certificate.imported) > 0 ? 1 : 0
+  count             = length(aws_acm_certificate.imported) > 0 ? 1 : 0
   load_balancer_arn = aws_lb.main.arn
   port              = 443
   protocol          = "HTTPS"
@@ -155,7 +155,7 @@ output "alb_dns_name" {
 
 output "imported_certificate_arn" {
   description = "ARN of the imported ACM certificate (if created)"
-  value = length(aws_acm_certificate.imported) > 0 ? aws_acm_certificate.imported[0].arn : ""
+  value       = length(aws_acm_certificate.imported) > 0 ? aws_acm_certificate.imported[0].arn : ""
 }
 
 output "effective_domain_name" {
