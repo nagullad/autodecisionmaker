@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <None Include=".github\ACTIONS-SETUP.md" />
+    <None Include=".github\workflows\build-and-deploy.yml" />
     <None Include=".github\workflows\deploy.yml" />
   </ItemGroup>
 
