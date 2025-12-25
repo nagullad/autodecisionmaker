@@ -114,16 +114,15 @@ resource "aws_acm_certificate" "imported" {
   }
 }
 
-# ALB HTTPS Listener (uses imported ACM cert when present)
-resource "aws_lb_listener" "https" {
-  count             = length(aws_acm_certificate.imported) > 0 ? 1 : 0
+# ALB Listener (main) - uses HTTPS if a certificate is imported, otherwise HTTP
+resource "aws_lb_listener" "main" {
   load_balancer_arn = aws_lb.main.arn
-  port              = 443
-  protocol          = "HTTPS"
+  port              = length(aws_acm_certificate.imported) > 0 ? 443 : 80
+  protocol          = length(aws_acm_certificate.imported) > 0 ? "HTTPS" : "HTTP"
 
-  ssl_policy = "ELBSecurityPolicy-2016-08"
+  ssl_policy = length(aws_acm_certificate.imported) > 0 ? "ELBSecurityPolicy-2016-08" : null
 
-  certificate_arn = aws_acm_certificate.imported[0].arn
+  certificate_arn = length(aws_acm_certificate.imported) > 0 ? aws_acm_certificate.imported[0].arn : null
 
   default_action {
     type             = "forward"
@@ -131,7 +130,7 @@ resource "aws_lb_listener" "https" {
   }
 }
 
-# When a certificate is provided, create an HTTP listener that redirects to HTTPS
+# When a certificate is provided, create a separate HTTP listener that redirects to HTTPS
 resource "aws_lb_listener" "http_redirect" {
   count             = length(aws_acm_certificate.imported) > 0 ? 1 : 0
   load_balancer_arn = aws_lb.main.arn
@@ -146,19 +145,6 @@ resource "aws_lb_listener" "http_redirect" {
       protocol    = "HTTPS"
       status_code = "HTTP_301"
     }
-  }
-}
-
-# When no certificate is provided, create an HTTP listener that forwards to the target group
-resource "aws_lb_listener" "http" {
-  count             = length(aws_acm_certificate.imported) > 0 ? 0 : 1
-  load_balancer_arn = aws_lb.main.arn
-  port              = 80
-  protocol          = "HTTP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.main.arn
   }
 }
 
