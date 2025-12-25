@@ -65,6 +65,11 @@ resource "aws_lb" "main" {
 
   enable_deletion_protection = false
 
+  # Force new ALB if there are conflicts with existing state
+  lifecycle {
+    create_before_destroy = false
+  }
+
   tags = merge(local.default_tags, {
     Name = "${var.app_name}-alb"
   })
@@ -120,8 +125,7 @@ resource "aws_lb_listener" "main" {
   port              = length(aws_acm_certificate.imported) > 0 ? 443 : 80
   protocol          = length(aws_acm_certificate.imported) > 0 ? "HTTPS" : "HTTP"
 
-  ssl_policy = length(aws_acm_certificate.imported) > 0 ? "ELBSecurityPolicy-2016-08" : null
-
+  ssl_policy      = length(aws_acm_certificate.imported) > 0 ? "ELBSecurityPolicy-2016-08" : null
   certificate_arn = length(aws_acm_certificate.imported) > 0 ? aws_acm_certificate.imported[0].arn : null
 
   default_action {
