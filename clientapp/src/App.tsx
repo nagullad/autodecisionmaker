@@ -22,7 +22,6 @@ function App() {
             <h1>Hello, Dinesh</h1>
             <p>Hope you're having a great day!</p>
             <p>Is Nikhil playing games on his phone?</p>
-            <p>Is Mom watching Korean Drama on Netflix</p>
           </div>
         </Item>
       </Grid>
