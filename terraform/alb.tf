@@ -154,6 +154,41 @@ resource "aws_lb_listener" "http_redirect" {
   }
 }
 
+# -- listener rule placeholder for importing existing blocking rule --
+# If your ALB has an existing listener rule that blocks target-group changes,
+# import it into Terraform. Run `aws elbv2 describe-rules --rule-arns <rule-arn>`
+# to inspect actions/conditions and then fill the resource below and run terraform import.
+
+# Example: replace placeholders with actual values from `describe-rules` output.
+# If the existing rule is the listener's default rule (no priority), import the listener
+# instead and adjust aws_lb_listener.main.default_action accordingly.
+
+# resource "aws_lb_listener_rule" "blocking_rule" {
+#   # use the existing listener resource defined as aws_lb_listener.main
+#   listener_arn = aws_lb_listener.main.arn
+#   # priority is required for non-default rules (1-50000)
+#   priority     = 100
+#
+#   action {
+#     type             = "forward"
+#     # If the rule forwards to your target group, use the ARN below
+#     target_group_arn = aws_lb_target_group.main.arn
+#   }
+#
+#   condition {
+#     # common condition types: path-pattern, host-header, http-header
+#     field  = "path-pattern"
+#     values = ["/your-path/*"]
+#   }
+# }
+
+# After you replace the placeholders, import the existing rule into state:
+# terraform init
+# terraform import 'aws_lb_listener_rule.blocking_rule' arn:aws:elasticloadbalancing:us-east-1:674172270747:listener-rule/app/autodecisionmaker-alb/1541afb8f2d1acce/918f6362d9991c50/4b47fa64d826b89a
+
+# If the rule is the listener default (no priority), instead run:
+# terraform import 'aws_lb_listener.main' arn:aws:elasticloadbalancing:us-east-1:674172270747:listener/app/autodecisionmaker-alb/1541afb8f2d1acce/918f6362d9991c50
+
 output "alb_dns_name" {
   description = "DNS name of the load balancer"
   value       = aws_lb.main.dns_name
