@@ -140,7 +140,9 @@ resource "aws_ecs_service" "app" {
     container_port   = var.container_port
   }
 
-  depends_on = [aws_lb_listener.main]
+  # Ensure the service waits for the ALB listeners to be created. If an HTTPS listener
+  # is optional (created with count), include any created instances via the splat.
+  depends_on = concat([aws_lb_listener.http], aws_lb_listener.https[*])
 
   tags = merge(local.default_tags, {
     Name = "${var.app_name}-service"
