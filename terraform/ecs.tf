@@ -140,9 +140,10 @@ resource "aws_ecs_service" "app" {
     container_port   = var.container_port
   }
 
-  # Ensure the service waits for the ALB listeners to be created. If an HTTPS listener
-  # is optional (created with count), include any created instances via the splat.
-  depends_on = concat([aws_lb_listener.http], aws_lb_listener.https[*])
+  # Ensure the service waits for the ALB target group to be created.
+  # Using a static dependency here (target group) avoids dynamic expressions
+  # in depends_on which Terraform does not allow.
+  depends_on = [aws_lb_target_group.main]
 
   tags = merge(local.default_tags, {
     Name = "${var.app_name}-service"
