@@ -7,9 +7,9 @@ resource "aws_ecs_cluster" "main" {
     value = "enabled"
   }
 
-  tags = {
+  tags = merge(local.default_tags, {
     Name = "${var.app_name}-cluster"
-  }
+  })
 }
 
 # ECS Cluster Capacity Providers
@@ -30,9 +30,9 @@ resource "aws_cloudwatch_log_group" "ecs" {
   name              = "/ecs/${var.app_name}"
   retention_in_days = 30
 
-  tags = {
+  tags = merge(local.default_tags, {
     Name = "${var.app_name}-logs"
-  }
+  })
 }
 
 # IAM Role for ECS Task Execution
@@ -50,9 +50,9 @@ resource "aws_iam_role" "ecs_task_execution_role" {
     }]
   })
 
-  tags = {
+  tags = merge(local.default_tags, {
     Name = "${var.app_name}-ecs-task-execution-role"
-  }
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
@@ -75,9 +75,9 @@ resource "aws_iam_role" "ecs_task_role" {
     }]
   })
 
-  tags = {
+  tags = merge(local.default_tags, {
     Name = "${var.app_name}-ecs-task-role"
-  }
+  })
 }
 
 # ECS Task Definition
@@ -115,9 +115,9 @@ resource "aws_ecs_task_definition" "app" {
     ]
   }])
 
-  tags = {
+  tags = merge(local.default_tags, {
     Name = "${var.app_name}-task-definition"
-  }
+  })
 }
 
 # ECS Service
@@ -140,11 +140,14 @@ resource "aws_ecs_service" "app" {
     container_port   = var.container_port
   }
 
-  depends_on = [aws_lb_listener.main]
+  # Ensure the service waits for the ALB target group to be created.
+  # Using a static dependency here (target group) avoids dynamic expressions
+  # in depends_on which Terraform does not allow.
+  depends_on = [aws_lb_target_group.main]
 
-  tags = {
+  tags = merge(local.default_tags, {
     Name = "${var.app_name}-service"
-  }
+  })
 }
 
 # Auto Scaling Target

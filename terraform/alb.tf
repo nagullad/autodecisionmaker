@@ -65,9 +65,16 @@ resource "aws_lb" "main" {
 
   enable_deletion_protection = false
 
-  tags = {
-    Name = "${var.app_name}-alb"
+  # If ALB already exists or security groups are managed outside Terraform,
+  # ignore changes to security_groups to avoid SetSecurityGroups API errors.
+  lifecycle {
+    create_before_destroy = false
+    ignore_changes        = [security_groups]
   }
+
+  tags = merge(local.default_tags, {
+    Name = "${var.app_name}-alb"
+  })
 }
 
 # Target Group
@@ -92,11 +99,36 @@ resource "aws_lb_target_group" "main" {
   }
 }
 
-# ALB Listener
+# Effective domain name: use provided var.domain_name when set, otherwise fall back to the ALB DNS name
+locals {
+  effective_domain_name = length(trimspace(var.domain_name)) > 0 ? var.domain_name : aws_lb.main.dns_name
+}
+
+# Optionally import a certificate into ACM if local PEM paths are provided
+resource "aws_acm_certificate" "imported" {
+  count = length(trimspace(var.certificate_body_path)) > 0 ? 1 : 0
+
+  private_key      = file(var.private_key_path)
+  certificate_body = file(var.certificate_body_path)
+
+  certificate_chain = length(trimspace(var.certificate_chain_path)) > 0 ? file(var.certificate_chain_path) : null
+
+  # Use the effective domain name
+  domain_name = local.effective_domain_name
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# ALB Listener (main) - uses HTTPS if a certificate is imported, otherwise HTTP
 resource "aws_lb_listener" "main" {
   load_balancer_arn = aws_lb.main.arn
-  port              = 80
-  protocol          = "HTTP"
+  port              = length(aws_acm_certificate.imported) > 0 ? 443 : 80
+  protocol          = length(aws_acm_certificate.imported) > 0 ? "HTTPS" : "HTTP"
+
+  ssl_policy      = length(aws_acm_certificate.imported) > 0 ? "ELBSecurityPolicy-2016-08" : null
+  certificate_arn = length(aws_acm_certificate.imported) > 0 ? aws_acm_certificate.imported[0].arn : null
 
   default_action {
     type             = "forward"
@@ -104,7 +136,70 @@ resource "aws_lb_listener" "main" {
   }
 }
 
+# When a certificate is provided, create a separate HTTP listener that redirects to HTTPS
+resource "aws_lb_listener" "http_redirect" {
+  count             = length(aws_acm_certificate.imported) > 0 ? 1 : 0
+  load_balancer_arn = aws_lb.main.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type = "redirect"
+
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+  }
+}
+
+# -- listener rule placeholder for importing existing blocking rule --
+# If your ALB has an existing listener rule that blocks target-group changes,
+# import it into Terraform. Run `aws elbv2 describe-rules --rule-arns <rule-arn>`
+# to inspect actions/conditions and then fill the resource below and run terraform import.
+
+# Example: replace placeholders with actual values from `describe-rules` output.
+# If the existing rule is the listener's default rule (no priority), import the listener
+# instead and adjust aws_lb_listener.main.default_action accordingly.
+
+# resource "aws_lb_listener_rule" "blocking_rule" {
+#   # use the existing listener resource defined as aws_lb_listener.main
+#   listener_arn = aws_lb_listener.main.arn
+#   # priority is required for non-default rules (1-50000)
+#   priority     = 100
+#
+#   action {
+#     type             = "forward"
+#     # If the rule forwards to your target group, use the ARN below
+#     target_group_arn = aws_lb_target_group.main.arn
+#   }
+#
+#   condition {
+#     # common condition types: path-pattern, host-header, http-header
+#     field  = "path-pattern"
+#     values = ["/your-path/*"]
+#   }
+# }
+
+# After you replace the placeholders, import the existing rule into state:
+# terraform init
+# terraform import 'aws_lb_listener_rule.blocking_rule' arn:aws:elasticloadbalancing:us-east-1:674172270747:listener-rule/app/autodecisionmaker-alb/1541afb8f2d1acce/918f6362d9991c50/4b47fa64d826b89a
+
+# If the rule is the listener default (no priority), instead run:
+# terraform import 'aws_lb_listener.main' arn:aws:elasticloadbalancing:us-east-1:674172270747:listener/app/autodecisionmaker-alb/1541afb8f2d1acce/918f6362d9991c50
+
 output "alb_dns_name" {
   description = "DNS name of the load balancer"
   value       = aws_lb.main.dns_name
+}
+
+output "imported_certificate_arn" {
+  description = "ARN of the imported ACM certificate (if created)"
+  value       = length(aws_acm_certificate.imported) > 0 ? aws_acm_certificate.imported[0].arn : ""
+}
+
+output "effective_domain_name" {
+  description = "Domain name used for the certificate (either var.domain_name or ALB DNS)"
+  value       = local.effective_domain_name
 }

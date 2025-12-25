@@ -4,9 +4,9 @@ resource "aws_vpc" "main" {
   enable_dns_hostnames = true
   enable_dns_support   = true
 
-  tags = {
+  tags = merge(local.default_tags, {
     Name = "${var.app_name}-vpc"
-  }
+  })
 }
 
 # Public Subnets
@@ -16,9 +16,9 @@ resource "aws_subnet" "public_1" {
   availability_zone       = data.aws_availability_zones.available.names[0]
   map_public_ip_on_launch = true
 
-  tags = {
+  tags = merge(local.default_tags, {
     Name = "${var.app_name}-public-subnet-1"
-  }
+  })
 }
 
 resource "aws_subnet" "public_2" {
@@ -27,9 +27,9 @@ resource "aws_subnet" "public_2" {
   availability_zone       = data.aws_availability_zones.available.names[1]
   map_public_ip_on_launch = true
 
-  tags = {
+  tags = merge(local.default_tags, {
     Name = "${var.app_name}-public-subnet-2"
-  }
+  })
 }
 
 # Private Subnets
@@ -38,9 +38,9 @@ resource "aws_subnet" "private_1" {
   cidr_block        = "10.0.10.0/24"
   availability_zone = data.aws_availability_zones.available.names[0]
 
-  tags = {
+  tags = merge(local.default_tags, {
     Name = "${var.app_name}-private-subnet-1"
-  }
+  })
 }
 
 resource "aws_subnet" "private_2" {
@@ -48,18 +48,18 @@ resource "aws_subnet" "private_2" {
   cidr_block        = "10.0.11.0/24"
   availability_zone = data.aws_availability_zones.available.names[1]
 
-  tags = {
+  tags = merge(local.default_tags, {
     Name = "${var.app_name}-private-subnet-2"
-  }
+  })
 }
 
 # Internet Gateway
 resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 
-  tags = {
+  tags = merge(local.default_tags, {
     Name = "${var.app_name}-igw"
-  }
+  })
 }
 
 # Route Table for Public Subnets
@@ -71,9 +71,9 @@ resource "aws_route_table" "public" {
     gateway_id = aws_internet_gateway.main.id
   }
 
-  tags = {
+  tags = merge(local.default_tags, {
     Name = "${var.app_name}-public-rt"
-  }
+  })
 }
 
 resource "aws_route_table_association" "public_1" {
@@ -90,9 +90,9 @@ resource "aws_route_table_association" "public_2" {
 resource "aws_eip" "nat" {
   domain = "vpc"
 
-  tags = {
+  tags = merge(local.default_tags, {
     Name = "${var.app_name}-nat-eip"
-  }
+  })
 
   depends_on = [aws_internet_gateway.main]
 }
@@ -102,9 +102,9 @@ resource "aws_nat_gateway" "main" {
   allocation_id = aws_eip.nat.id
   subnet_id     = aws_subnet.public_1.id
 
-  tags = {
+  tags = merge(local.default_tags, {
     Name = "${var.app_name}-nat"
-  }
+  })
 
   depends_on = [aws_internet_gateway.main]
 }
@@ -118,9 +118,9 @@ resource "aws_route_table" "private" {
     nat_gateway_id = aws_nat_gateway.main.id
   }
 
-  tags = {
+  tags = merge(local.default_tags, {
     Name = "${var.app_name}-private-rt"
-  }
+  })
 }
 
 resource "aws_route_table_association" "private_1" {
