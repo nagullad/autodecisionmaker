@@ -131,8 +131,9 @@ resource "aws_lb_listener" "https" {
   }
 }
 
-# ALB HTTP listener that redirects to HTTPS
-resource "aws_lb_listener" "http" {
+# When a certificate is provided, create an HTTP listener that redirects to HTTPS
+resource "aws_lb_listener" "http_redirect" {
+  count             = length(aws_acm_certificate.imported) > 0 ? 1 : 0
   load_balancer_arn = aws_lb.main.arn
   port              = 80
   protocol          = "HTTP"
@@ -145,6 +146,19 @@ resource "aws_lb_listener" "http" {
       protocol    = "HTTPS"
       status_code = "HTTP_301"
     }
+  }
+}
+
+# When no certificate is provided, create an HTTP listener that forwards to the target group
+resource "aws_lb_listener" "http" {
+  count             = length(aws_acm_certificate.imported) > 0 ? 0 : 1
+  load_balancer_arn = aws_lb.main.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.main.arn
   }
 }
 
