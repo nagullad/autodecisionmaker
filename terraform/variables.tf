@@ -84,7 +84,7 @@ variable "certificate_chain_path" {
 }
 
 variable "domain_name" {
-  description = "Domain name for the certificate (e.g. example.com). If empty, app_name will be used — replace with your actual domain when importing a valid cert."
+  description = "Domain name for the certificate (e.g. example.com). If empty, app_name will be used. Replace with your actual domain when importing a valid cert."
   type        = string
   default     = ""
 }
